@@ -5,7 +5,7 @@
 - Board: TechNexion PICO-IMX7D with PI baseboard
 - WiFi chip: **AMPAK AP6335** (Broadcom BCM4339) on SDIO bus
   - SDIO ID: `02D0:4335`
-- Kernel: 5.15.71 (TechNexion custom build, from `pico-imx7_pico-pi_ubuntu-22.04_qca9377_lcd-800x480_20240426.zip`)
+- Kernel: 5.15.71 (TechNexion custom build, from [`pico-imx7_pico-pi_ubuntu-22.04_qca9377_lcd-800x480_20240426.zip`](https://download.technexion.com/demo_software/PICO/IMX7/pico-imx7-emmc/))
 
 ## Root Cause
 
@@ -19,7 +19,7 @@ Two issues must be fixed:
 
 ## Step 1 — Flash the Ubuntu 22.04 image
 
-Get `pico-imx7_pico-pi_ubuntu-22.04_qca9377_lcd-800x480_20240426.zip` from TechNexion.
+Get [`pico-imx7_pico-pi_ubuntu-22.04_qca9377_lcd-800x480_20240426.zip`](https://download.technexion.com/demo_software/PICO/IMX7/pico-imx7-emmc/) from TechNexion.
 
 ### Put board in SDP recovery mode
 
@@ -66,6 +66,7 @@ sed \
   config-5.15.71 > config-5.15.71-brcmfmac
 
 # Shallow-clone TechNexion 5.15.71 kernel source
+# https://github.com/TechNexion/linux-tn-imx/tree/tn-imx_5.15.71_2.2.0-stable
 git clone --depth=1 --branch tn-imx_5.15.71_2.2.0-stable \
   https://github.com/TechNexion/linux-tn-imx.git \
   linux-tn-imx-5.15
@@ -102,6 +103,10 @@ ls linux-tn-imx-5.15/drivers/net/wireless/broadcom/brcm80211/brcmutil/brcmutil.k
 ---
 
 ## Step 3 — Download firmware files
+
+Sources:
+- [`cyfmac4339-sdio.bin`](https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git/tree/cypress/cyfmac4339-sdio.bin) — BCM4339 firmware binary (linux-firmware, Cypress)
+- [`brcmfmac4339-sdio.txt`](https://github.com/buildroot/buildroot/blob/master/board/technexion/imx6ulpico/rootfs_overlay/lib/firmware/brcm/brcmfmac4339-sdio.txt) — nvram calibration file for TechNexion PICO boards (Buildroot)
 
 ```bash
 # BCM4339 firmware binary (from linux-firmware via Cypress)
@@ -167,9 +172,9 @@ docker run --rm \
   "
 ```
 
-> **Why `imx7d-pico-qca.dtsi` and not `imx7d-pico.dtsi`?**
+> **Why [`imx7d-pico-qca.dtsi`](https://github.com/TechNexion/linux-tn-imx/blob/tn-imx_5.15.71_2.2.0-stable/arch/arm/boot/dts/imx7d-pico-qca.dtsi) and not [`imx7d-pico.dtsi`](https://github.com/TechNexion/linux-tn-imx/blob/tn-imx_5.15.71_2.2.0-stable/arch/arm/boot/dts/imx7d-pico.dtsi)?**
 > The TechNexion-specific macros (`PICO_PI_GPIO_DEFS()`, `PICO_I2CA`, etc.) that
-> `baseboard_pico_pi.dtsi` needs are defined in `imx7d-pico-qca.dtsi` but missing from
+> [`baseboard_pico_pi.dtsi`](https://github.com/TechNexion/linux-tn-imx/blob/tn-imx_5.15.71_2.2.0-stable/arch/arm/boot/dts/baseboard_pico_pi.dtsi) needs are defined in `imx7d-pico-qca.dtsi` but missing from
 > the upstream `imx7d-pico.dtsi`. The mmc-pwrseq node is added back manually above.
 
 ---
@@ -270,5 +275,5 @@ brcmfmac: brcmf_c_preinit_dcmds: Firmware: BCM4339/2 wl0: ... version 6.37.39.11
 | Kernel image | `/mnt/zImage` |
 | DTB (QCA variant) | `/mnt/imx7d-pico-pi-qca.dtb` |
 | DTB (Broadcom/this fix) | `/mnt/imx7d-pico-pi.dtb` |
-| Kernel source branch | `tn-imx_5.15.71_2.2.0-stable` |
+| Kernel source branch | [`tn-imx_5.15.71_2.2.0-stable`](https://github.com/TechNexion/linux-tn-imx/tree/tn-imx_5.15.71_2.2.0-stable) |
 | Kernel vermagic | `5.15.71 SMP preempt mod_unload modversions ARMv7 p2v8` |
