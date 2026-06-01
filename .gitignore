@@ -1,0 +1,11 @@
+# Build artifacts
+brcmfmac-build/
+flash/
+
+# Downloaded images
+*.zip
+*.wic.bz2
+*.bmap
+
+# Logs
+*.log
