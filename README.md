@@ -7,6 +7,27 @@
   - SDIO ID: `02D0:4335`
 - Kernel: 5.15.71 (TechNexion custom build, from [`pico-imx7_pico-pi_ubuntu-22.04_qca9377_lcd-800x480_20240426.zip`](https://download.technexion.com/demo_software/PICO/IMX7/pico-imx7-emmc/))
 
+## Prebuilt files
+
+If you are running kernel `5.15.71` from the `pico-imx7_pico-pi_ubuntu-22.04_qca9377_lcd-800x480_20240426` image, you can skip Steps 2–4 and use the prebuilt files in [`dist/`](dist/):
+
+| File | Purpose |
+|---|---|
+| [`dist/brcmfmac.ko`](dist/brcmfmac.ko) | WiFi driver module |
+| [`dist/brcmutil.ko`](dist/brcmutil.ko) | brcmfmac dependency module |
+| [`dist/imx7d-pico-pi-brcm.dtb`](dist/imx7d-pico-pi-brcm.dtb) | Custom DTB with `mmc-pwrseq-simple` |
+| [`dist/cyfmac4339-sdio.bin`](dist/cyfmac4339-sdio.bin) | BCM4339 firmware binary |
+| [`dist/brcmfmac4339-sdio.txt`](dist/brcmfmac4339-sdio.txt) | BCM4339 nvram calibration file |
+
+Jump straight to [Step 5 — Deploy to the board](#step-5--deploy-to-the-board) and set `BASE` to the `dist/` directory:
+
+```bash
+git clone https://github.com/carlossg/technexion.git
+BASE=technexion/dist KER=technexion/dist
+```
+
+---
+
 ## Root Cause
 
 Two issues must be fixed:
@@ -93,11 +114,11 @@ docker run --rm \
   "
 ```
 
-Verify:
+Verify and copy to the flat build dir for Step 5:
 
 ```bash
-ls linux-tn-imx-5.15/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko
-ls linux-tn-imx-5.15/drivers/net/wireless/broadcom/brcm80211/brcmutil/brcmutil.ko
+cp linux-tn-imx-5.15/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko .
+cp linux-tn-imx-5.15/drivers/net/wireless/broadcom/brcm80211/brcmutil/brcmutil.ko .
 ```
 
 ---
@@ -181,8 +202,15 @@ docker run --rm \
 
 ## Step 5 — Deploy to the board
 
+If using prebuilt files from `dist/`, set both variables to that directory.
+If using a local build, set them as shown:
+
 ```bash
-BASE=$(pwd)
+# Prebuilt:
+BASE=dist KER=dist
+
+# Or from a local build:
+BASE=$(pwd)/brcmfmac-build
 KER=$BASE/linux-tn-imx-5.15
 
 # Install kernel modules
@@ -191,11 +219,11 @@ ssh technexion.local "sudo mkdir -p \
   /lib/modules/5.15.71/kernel/drivers/net/wireless/broadcom/brcm80211/brcmutil \
   /lib/firmware/brcm"
 
-scp $KER/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko technexion.local:/tmp/
-scp $KER/drivers/net/wireless/broadcom/brcm80211/brcmutil/brcmutil.ko  technexion.local:/tmp/
-scp $BASE/cyfmac4339-sdio.bin   technexion.local:/tmp/
-scp $BASE/brcmfmac4339-sdio.txt technexion.local:/tmp/
-scp $KER/arch/arm/boot/dts/imx7d-pico-pi-brcm.dtb technexion.local:/tmp/
+scp $BASE/brcmfmac.ko            technexion.local:/tmp/
+scp $BASE/brcmutil.ko            technexion.local:/tmp/
+scp $BASE/cyfmac4339-sdio.bin    technexion.local:/tmp/
+scp $BASE/brcmfmac4339-sdio.txt  technexion.local:/tmp/
+scp $BASE/imx7d-pico-pi-brcm.dtb technexion.local:/tmp/
 
 ssh technexion.local "
   sudo cp /tmp/brcmfmac.ko \
